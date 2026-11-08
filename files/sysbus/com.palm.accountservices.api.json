@@ -1,0 +1,15 @@
+{
+	"accountservices.query": [
+		"com.palm.accountservices/getAccountToken"
+	],
+	"accountservices.operation": [
+		"com.palm.accountservices/authenticateAccount",
+		"com.palm.accountservices/getAggregatedAccountInfo",
+		"com.palm.accountservices/syncDeviceName",
+		"com.palm.accountservices/updateUsername",
+		"com.palm.accountservices/signOut"
+	],
+	"deviceprofile.query": [
+		"com.palm.deviceprofile/getDeviceProfile"
+	]
+}

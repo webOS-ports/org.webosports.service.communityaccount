@@ -1,0 +1,10 @@
+{
+	"appId": "com.palm.accountservices",
+	"allowedNames": ["com.palm.accountservices", "com.palm.deviceprofile"],
+	"trustLevel": "oem",
+	"type": "regular",
+	"permissions": [
+		{ "service": "com.palm.accountservices", "inbound": ["*"], "outbound": ["*"] },
+		{ "service": "com.palm.deviceprofile", "inbound": ["*"], "outbound": ["*"] }
+	]
+}

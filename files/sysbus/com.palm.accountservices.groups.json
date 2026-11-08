@@ -1,0 +1,6 @@
+{
+	"allowedNames": ["com.palm.accountservices", "com.palm.deviceprofile"],
+	"accountservices.query": ["dev"],
+	"accountservices.operation": ["dev"],
+	"deviceprofile.query": ["dev"]
+}

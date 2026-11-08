@@ -1,0 +1,17 @@
+{
+	"com.palm.accountservices": [
+		"accountservices.query",
+		"accountservices.operation",
+		"deviceprofile.query",
+		"accountsservice.management",
+		"accountsservice.operation",
+		"database.operation",
+		"systemsettings.query",
+		"systemsettings.management"
+	],
+	"com.palm.deviceprofile": [
+		"deviceprofile.query",
+		"systemsettings.query",
+		"database.operation"
+	]
+}

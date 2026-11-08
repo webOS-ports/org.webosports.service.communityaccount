@@ -1,0 +1,10 @@
+{
+	"name": "com.palm.service.communityaccount",
+	"version": "1.0.0",
+	"description": "webOS Community Account identity bridge: answers com.palm.accountservices and com.palm.deviceprofile against the webOSArchive device.php backend",
+	"main": "service.js",
+	"private": true,
+	"engines": { "node": ">=22" },
+	"scripts": { "test": "node --test tests/*.test.js" },
+	"license": "GPL-3.0-or-later"
+}
