@@ -75,7 +75,8 @@ async function start({palmbus, exit, idleMs, log = console, transport, store, nd
 	serveTable(busA, ACCOUNTSERVICES, handlers.accountservices, log);
 	serveTable(busB, DEVICEPROFILE, handlers.deviceprofile, log);
 
-	log.log('org.webosports.service.communityaccount: up (nduId ' + id + ', node ' + process.version + ')');
+	// No id in the log: it is what the server knows this device by.
+	log.log('org.webosports.service.communityaccount: up (' + (nduId ? 'fixed device id' : 'device id from nyx and the device key') + ', node ' + process.version + ')');
 	return {busA, busB, handlers, nduId: id};
 }
 

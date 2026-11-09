@@ -66,3 +66,14 @@ test('an error reply names the error but carries no stack', async () => {
 		assert.ok(r.exception.indexOf('/usr/palm') === -1 && r.exception.indexOf(__dirname) === -1);
 	}
 });
+
+test('the start-up line names no device id and no code', async () => {
+	const lines = [];
+	const log = {log: l => lines.push(String(l)), warn() {}, error() {}};
+	const palmbus = createPalmbus(async () => ({returnValue: true}));
+	await start({palmbus, store: createMemoryStore(null), nduId: 'SECRET-ID-123', idleMs: 0, log,
+		exit: () => {}, transport: async () => ({status: 200, text: '{}'})});
+	const up = lines.find(l => / up \(/.test(l));
+	assert.ok(up, lines.join('\n'));
+	assert.ok(up.indexOf('SECRET-ID-123') === -1 && up.indexOf('=>') === -1, up);
+});
