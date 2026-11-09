@@ -25,6 +25,7 @@ const {createDbStore} = require('./lib/store');
 const {createHandlers} = require('./lib/handlers');
 const {method, DEFAULT_TIMEOUT_S} = require('./lib/mojo');
 const {readNduid} = require('./lib/nduid');
+const {createDeviceIdentity} = require('./lib/deviceid');
 
 const ACCOUNTSERVICES = 'com.palm.accountservices';
 const DEVICEPROFILE = 'com.palm.deviceprofile';
@@ -49,12 +50,22 @@ function serveTable(bus, serviceName, methods, log) {
 }
 
 // start(): both bus names on one process. Options let a test inject an HTTP
-// transport, a store, a fixed nduId and a base URL.
-async function start({palmbus, exit, idleMs, log = console, transport, store, nduId, base} = {}) {
+// transport, a store, a fixed account device id (nduId), a directory for the
+// device key and a base URL.
+async function start({palmbus, exit, idleMs, log = console, transport, store, nduId, deviceDir, base} = {}) {
 	const busA = createBus({palmbus, name: ACCOUNTSERVICES, exit, idleMs, log});
 	const busB = createBus({palmbus, name: DEVICEPROFILE, exit, idleMs, log});
 	const pc = createPalmCall(busA);
-	const id = nduId || readNduid({log});
+	// What the account server knows this device by: derived from the
+	// platform nduId with this device's own key (lib/deviceid.js).
+	let platformNduId = null;
+	const identity = createDeviceIdentity({dir: deviceDir, log});
+	const id = nduId ? () => nduId : () => {
+		if (platformNduId === null) {
+			platformNduId = readNduid({log});
+		}
+		return identity.accountId(platformNduId);
+	};
 
 	const server = createServer({base, transport, log});
 	const device = createDevice({pc, nduId: id, log});
