@@ -69,7 +69,7 @@ test('sign up: createDeviceAccount with what the server asks for, then signed in
 		return authInfo();
 	}}});
 	const r = await rig.handlers.createNovaAccount(NEW);
-	assert.deepStrictEqual(r, {returnValue: true, accountAlias: 'new@example.org', username: 'Ada Lovelace'});
+	assert.deepStrictEqual(r, {returnValue: true, accountAlias: 'new@example.org', username: 'Ada Lovelace', profileNamed: true});
 	assert.strictEqual(rig.accounts.state.created.length, 1);
 	assert.strictEqual(rig.accounts.state.created[0].username, 'Ada Lovelace');
 	assert.strictEqual((await rig.handlers.getAccountToken()).token, 'TK-NEW');
@@ -171,4 +171,19 @@ test('updateUsername: a name the server turns down changes nothing here', async 
 	await assert.rejects(rig.handlers.updateUsername({username: 'taken'}), e => e.errorCode === 'USERNAME_TAKEN');
 	assert.strictEqual((await rig.store.get()).username, 'old');
 	assert.strictEqual(rig.accounts.state.accounts[0].username, 'old');
+});
+
+test('signed up on the server but the profile cannot be named: still signed in, and says so', async () => {
+	// What a device whose bus refused the accounts service saw: the account
+	// was made, the reply said "failed", and the next try got EMAIL_TAKEN.
+	const rig = makeRig({routes: {createDeviceAccount: () => authInfo()}});
+	rig.accounts.listAccounts = () => {
+		throw new Error('Denied method call "listAccounts" for category "/"');
+	};
+	rig.accounts.createAccount = () => {
+		throw new Error('Denied method call "createAccount" for category "/"');
+	};
+	const r = await rig.handlers.createNovaAccount(NEW);
+	assert.deepStrictEqual(r, {returnValue: true, accountAlias: 'new@example.org', username: 'Ada Lovelace', profileNamed: false});
+	assert.strictEqual((await rig.handlers.getAccountToken()).token, 'TK-NEW', 'the token was not kept');
 });

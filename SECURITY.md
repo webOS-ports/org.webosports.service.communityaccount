@@ -52,8 +52,15 @@ Found on a device and fixed 2026-11-09
 - **The role never applied** — `run-js-service -n` gives the process its
   directory name (`org.webosports.service.communityaccount`) as appId, and the
   role and client permissions were keyed `com.palm.accountservices`, so the
-  service died on start ("Invalid permissions"). Both now carry the real
-  appId; `tests/sysbus.test.js` ties them to the `.service` Exec directory.
+  service died on start ("Invalid permissions"). The role now carries the
+  real appId; `tests/sysbus.test.js` ties it to the `.service` Exec directory.
+- **Client permissions keyed by the wrong name** — the same change re-keyed
+  the client permissions by that appId alone. The hub takes a service's
+  required groups by the bus name it calls from, so the bridge was left with
+  only "public" and every call it made was refused (`createAccount`,
+  `listAccounts`, `deviceInfo/query`). A sign-up made the account on the
+  server and then reported a failure. They are keyed by both bus names again
+  (and the appId).
 - **No stack traces in replies** — `mojo.js` put the error's stack in the
   `exception` field of every error reply, handing any caller the service's
   paths and code layout. It now carries the error's name and message only; the
