@@ -49,12 +49,22 @@ test('the role is the process\'s own: its appId is the service directory', () =>
 	}
 });
 
-test('the client permissions are keyed by the same appId, and only by it', () => {
+test('the client permissions are keyed by each bus name the process registers', () => {
+	// The hub takes a service's required groups by the bus name it calls from
+	// (ls-hubd active_permission_map.cpp: groups.GetRequired(lookup_service)),
+	// not by its appId. Keyed by the appId alone, the bridge got only "public"
+	// and every call it made was refused: "Denied method call createAccount".
+	// The appId key stays as well, for a caller that is looked up by it.
 	const perm = json('com.palm.accountservices.perm.json');
-	assert.deepStrictEqual(Object.keys(perm), [APP_ID]);
-	// What it calls: the accounts service for the profile, db8 for the token.
-	for (const group of ['accountsservice.operation', 'database.operation', 'deviceprofile.query']) {
-		assert.ok(perm[APP_ID].includes(group), 'missing ' + group);
+	assert.deepStrictEqual(Object.keys(perm).sort(), [...NAMES, APP_ID].sort());
+	// What it calls: the accounts service for the profile (listAccounts,
+	// createAccount, modifyAccount), db8 for the token, the system service for
+	// the device name. Calls go out on either name's handle, so both have all.
+	for (const key of Object.keys(perm)) {
+		for (const group of ['accountsservice.management', 'accountsservice.operation', 'database.operation',
+			'systemsettings.query']) {
+			assert.ok(perm[key].includes(group), key + ' is missing ' + group);
+		}
 	}
 });
 
@@ -70,4 +80,20 @@ test('the groups and api files cover both names', () => {
 	for (const group of Object.keys(api)) {
 		assert.ok(group in groups, group + ' is in the api file but not the groups file');
 	}
+});
+
+test('every method the bridge serves is in the api file, and nothing else is', () => {
+	// A method served but in no group is refused to every caller; the
+	// profile editor's name, e-mail and password rows were added this way.
+	const {createHandlers} = require('../lib/handlers');
+	const h = createHandlers({});
+	const served = [];
+	for (const [name, table] of [['com.palm.accountservices', h.accountservices], ['com.palm.deviceprofile', h.deviceprofile]]) {
+		for (const m of Object.keys(table)) {
+			served.push(name + '/' + m);
+		}
+	}
+	const listed = [].concat(...Object.values(json('com.palm.accountservices.api.json')));
+	assert.deepStrictEqual([...listed].sort(), [...served].sort());
+	assert.strictEqual(new Set(listed).size, listed.length, 'a method is in two groups');
 });

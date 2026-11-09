@@ -38,10 +38,21 @@ Bus API
 com.palm.deviceprofile/getDeviceProfile        {}                       -> { returnValue, deviceInfo:{ nduId, deviceName, ... } }
 com.palm.accountservices/getAccountToken       {}                       -> { accountAlias, accountUsername, token, ... }   (local, no network)
 com.palm.accountservices/authenticateAccount   { email, password }      -> signs in: POST authenticateFromDevice, create local profile, save token
+                                                                           (a wrong e-mail or password: errorCode AUTH_FAILED)
+com.palm.accountservices/createNovaAccount     { email, password, firstName, lastName? }
+                                                                        -> signs up and in: POST createDeviceAccount, then as authenticateAccount
+                                                                           (errorCode INVALID_EMAIL, WEAK_PASSWORD, EMAIL_TAKEN, ... as the server sends it)
+com.palm.accountservices/isEmailAvailable      { email }                -> { available }: POST isEmailAvailable
+com.palm.accountservices/getTermsAndConditions {}                       -> { terms }: the server's terms of service as plain text (lib/terms.js)
 com.palm.accountservices/getAggregatedAccountInfo { locale }            -> the OutAccountInfoAggregate the profile view renders
 com.palm.accountservices/syncDeviceName        {}                       -> POST assignDeviceName (best-effort), returns the name
-com.palm.accountservices/updateUsername        { username }             -> update the handle (local cache + account; server push)
-com.palm.accountservices/signOut               {}                       -> POST deauthenticate, clear the local token
+com.palm.accountservices/updateUsername        { username }             -> POST updateUsername; once the server takes it, the local cache + account
+com.palm.accountservices/updateAccountInfo     { firstName, lastName? } -> POST updateAccountInfo: the display name (profile editor's NAME row)
+com.palm.accountservices/changeEmail           { email }                -> POST changeEmailAddress; once the server takes it, the kept alias
+                                                                           (errorCode PAMS1005 not an address, PAMS1008 in use, PAMS1123 the same one)
+com.palm.accountservices/changePassword        { newPassword }          -> POST changePassword (WEAK_PASSWORD below 8 bytes); this device stays signed in
+                                                                           All three authenticate with the kept token only, never one the caller passes.
+com.palm.accountservices/signOut               {}                       -> POST deauthenticate (revokes the token on the server), clear the local token
 ```
 
 The request/reply envelopes (`InAuthenticateFromDevice` / `AuthenticateInfoEx`,
@@ -57,9 +68,11 @@ Layout
 service.js            registers both bus names on one process
 lib/server.js         the device.php HTTP client (fetch; injectable transport)
 lib/handlers.js       the bus methods for both names
+lib/terms.js          the server's terms of service, HTML to plain text
 lib/device.js         this device's profile + the device/romToken request shapes
 lib/store.js          the local token (db8 kind, or in-memory for tests)
-lib/nduid.js          /dev/nduid
+lib/nduid.js          the platform nduId: /dev/nduid, then nyx (as woce-backup)
+lib/deviceid.js       the id the server sees: HMAC of the nduId under a key of this device
 lib/{bus,palmcall,db,mojo,errors}.js   shared LuneOS node-service runtime
 files/sysbus/         ACG api/groups/perm/role, and one .service per bus name
 ```
@@ -81,17 +94,22 @@ call fails), `updateUsername`, and both bus names answering over the bus.
 Grounding / open points
 -----------------------
 
-The base URL, method names, request/reply envelopes and local token shape are
-taken from webOSArchive's `webos-community-account` client
-(`palm_profile_util.js` and the `*CommandAssistant.js` handlers) and its server
-docs (`acl-appmall`). The one method whose exact server envelope is not pinned
-down from the client is `updateAccountInfo` (used by `updateUsername`): the local
-cache and account rename always take, and the server push is best-effort and
-self-heals on the next aggregate — confirm the envelope against
-`UpdateUsernameCommandAssistant.js` / `UpdateAccountCommandAssistant.js` before
-relying on the server side of a rename.
+The base URL, method names and request/reply envelopes are checked against the
+server itself: `WebService/device.php` in webOSArchive's `webos-catalog-service`
+(read 2026-11-09), with the community client (`webos-community-account`) for the
+names the device side used. `tests/server-shapes.test.js` holds the bridge to
+what device.php sends: an error is `{"JSONException": "<CODE>"}` at HTTP 200, a
+wrong password `{"authFailed": true}`, a new account an `AuthenticateInfoEx` as
+a sign-in. Reading it found three things the client-derived code had wrong: the
+error code was read from an object the server never sends, so every error came
+out as the caller's generic code; `signOut` put the token in an envelope
+`deauthenticate` does not read, so the token was never revoked on the server;
+and `updateUsername` went to `updateAccountInfo`, which only sets the display
+name.
 
-Not yet here (deliberate v1 scope): account creation (`createNovaAccount`),
-`isEmailAvailable` / `isUserValid`, security questions and password reset, and
-terms-and-conditions — the methods the full sign-*up* flow needs but sign-*in*
-and the profile view do not.
+Not here: `isUserValid` (a password re-check the profile editor no longer
+needs), security questions (the server stores none), a forgotten-password reset (the server has
+none; its `changePassword` needs a signed-in device), e-mail
+verification (the server has none; an account works at once), and erasing an
+account (the server has no method for it; its terms point to
+appcatalog.webosarchive.org/admin).
