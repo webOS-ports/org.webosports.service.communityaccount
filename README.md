@@ -59,7 +59,8 @@ lib/server.js         the device.php HTTP client (fetch; injectable transport)
 lib/handlers.js       the bus methods for both names
 lib/device.js         this device's profile + the device/romToken request shapes
 lib/store.js          the local token (db8 kind, or in-memory for tests)
-lib/nduid.js          /dev/nduid
+lib/nduid.js          the platform nduId: /dev/nduid, then nyx (as woce-backup)
+lib/deviceid.js       the id the server sees: HMAC of the nduId under a key of this device
 lib/{bus,palmcall,db,mojo,errors}.js   shared LuneOS node-service runtime
 files/sysbus/         ACG api/groups/perm/role, and one .service per bus name
 ```

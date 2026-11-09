@@ -43,6 +43,46 @@ Hardening applied 2026-11-08
 - **Upsert, not duplicate** — sign-in renames the single local palmprofile
   account rather than creating parallel rows, so there is one identity to erase.
 
+Found on a device and fixed 2026-11-09
+--------------------------------------
+
+- **The role never applied** — `run-js-service -n` gives the process its
+  directory name (`org.webosports.service.communityaccount`) as appId, and the
+  role and client permissions were keyed `com.palm.accountservices`, so the
+  service died on start ("Invalid permissions"). Both now carry the real
+  appId; `tests/sysbus.test.js` ties them to the `.service` Exec directory.
+- **No stack traces in replies** — `mojo.js` put the error's stack in the
+  `exception` field of every error reply, handing any caller the service's
+  paths and code layout. It now carries the error's name and message only; the
+  stack goes to the device log. (The same copy in app-services' accounts
+  service and contacts linker still does this.)
+- **The device is not named by its hardware** — see "Device identifier" below.
+- **No serial number or MAC address is sent** — `getDeviceParams` sends them as
+  `""` whatever the platform reports. (It read `serialNumber`, which LuneOS
+  happens not to set, so none had gone out.)
+
+Device identifier
+-----------------
+
+The platform nduId (`lib/nduid.js`: `/dev/nduid`, then `nyx-cmd DeviceInfo
+query nduid`, as woce-backup reads it) is not sent. On Halium it is an
+unsalted `SHA1(ro.serialno)`, and the serial is on the box and shown by adb:
+anyone who has it could compute the id the server holds and find the device
+and its account. On mainline (PinePhone, PinePhone Pro, PineTab2) nyx makes a
+random one, which is better but still the same id every local consumer sees.
+
+The server gets `HMAC-SHA1(key, "org.webosports.service.communityaccount/
+device-id\0" + nduId)` instead (`lib/deviceid.js`), 40 hex characters as
+before. The key is 32 random bytes made on the device the first time, in
+`/var/lib/org.webosports.service.communityaccount/device-id.key` (0600, in a
+0700 directory, read with O_NOFOLLOW and checked to be a regular file of the
+right size). Without the key the id cannot be worked out from the serial or the
+nduId; devices without an nduId still get ids of their own. It stays the same
+across reboots and updates and changes after a data wipe, when the server sees
+a new device. `getDeviceProfile` answers with the same id, so the Accounts
+app's "this device" matches the server's list; woce-backup keeps naming
+manifests after the platform nduId, which never leaves the device.
+
 Residual risks (tracked)
 ------------------------
 
@@ -59,7 +99,8 @@ GDPR
 ----
 
 - **Personal data handled**: account email (alias), username/display name, and
-  device identifiers (nduId, and serial/model where present) sent to the backend
+  a device identifier (the derived account device id, not the platform nduId;
+  no serial number or MAC address) and the device name and model sent to the backend
   for sign-in and the account's device-list feature; email + username + token
   cached locally in db8.
 - **Lawful basis**: consent — the whole flow is **user-initiated** sign-in.
@@ -70,6 +111,9 @@ GDPR
   possibly a third country). This is inherent to "reuse the community account";
   it belongs in the user-facing privacy note and, if LuneOS operates alongside
   it, a processor/DPA arrangement — outside this code's control.
+- **Pseudonymisation**: the device id the backend holds is keyed with a secret
+  that never leaves the device, so it cannot be linked to the hardware by
+  anyone holding the serial; wiping the device breaks the link for good.
 - **Right to erasure / withdrawal**: `signOut` calls `deauthenticate`
   (server-side revoke, best-effort) and clears the local token; a future
   account-deletion method (`dissociateCurrentDevice`/erase) would complete it
