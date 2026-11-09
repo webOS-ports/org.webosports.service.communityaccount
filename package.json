@@ -1,5 +1,5 @@
 {
-	"name": "com.palm.service.communityaccount",
+	"name": "org.webosports.service.communityaccount",
 	"version": "1.0.0",
 	"description": "webOS Community Account identity bridge: answers com.palm.accountservices and com.palm.deviceprofile against the webOSArchive device.php backend",
 	"main": "service.js",

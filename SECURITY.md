@@ -1,5 +1,5 @@
-Security & GDPR review — com.palm.service.communityaccount
-==========================================================
+Security & GDPR review — org.webosports.service.communityaccount
+================================================================
 
 Scope: the identity bridge (lib/*, service.js) as written on 2026-11-08,
 reviewed for security hardening and GDPR. It signs the device in to the webOS

@@ -1,3 +1,3 @@
 [D-BUS Service]
 Name=com.palm.deviceprofile
-Exec=/usr/bin/run-js-service -n /usr/palm/services/com.palm.service.communityaccount
+Exec=/usr/bin/run-js-service -n /usr/palm/services/org.webosports.service.communityaccount

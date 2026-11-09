@@ -4,7 +4,7 @@
 'use strict';
 
 /*
-	com.palm.service.communityaccount: the LuneOS identity bridge.
+	org.webosports.service.communityaccount: the LuneOS identity bridge.
 
 	The Accounts app's palmID flow and First Use already call
 	com.palm.accountservices and com.palm.deviceprofile (keyed by nduId), but
@@ -64,7 +64,7 @@ async function start({palmbus, exit, idleMs, log = console, transport, store, nd
 	serveTable(busA, ACCOUNTSERVICES, handlers.accountservices, log);
 	serveTable(busB, DEVICEPROFILE, handlers.deviceprofile, log);
 
-	log.log('com.palm.service.communityaccount: up (nduId ' + id + ', node ' + process.version + ')');
+	log.log('org.webosports.service.communityaccount: up (nduId ' + id + ', node ' + process.version + ')');
 	return {busA, busB, handlers, nduId: id};
 }
 
@@ -73,10 +73,10 @@ function run() {
 	if (running) {
 		return running;
 	}
-	process.title = 'com.palm.service.communityaccount';
+	process.title = 'org.webosports.service.communityaccount';
 	running = start({palmbus: require('palmbus')});
 	running.catch(e => {
-		console.error('com.palm.service.communityaccount: failed to start: ' + ((e && e.stack) || e));
+		console.error('org.webosports.service.communityaccount: failed to start: ' + ((e && e.stack) || e));
 		process.exit(1);
 	});
 	return running;

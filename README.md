@@ -1,5 +1,5 @@
-com.palm.service.communityaccount
-=================================
+org.webosports.service.communityaccount
+=======================================
 
 Summary
 -------
