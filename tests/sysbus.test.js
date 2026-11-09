@@ -81,3 +81,19 @@ test('the groups and api files cover both names', () => {
 		assert.ok(group in groups, group + ' is in the api file but not the groups file');
 	}
 });
+
+test('every method the bridge serves is in the api file, and nothing else is', () => {
+	// A method served but in no group is refused to every caller; the
+	// profile editor's name, e-mail and password rows were added this way.
+	const {createHandlers} = require('../lib/handlers');
+	const h = createHandlers({});
+	const served = [];
+	for (const [name, table] of [['com.palm.accountservices', h.accountservices], ['com.palm.deviceprofile', h.deviceprofile]]) {
+		for (const m of Object.keys(table)) {
+			served.push(name + '/' + m);
+		}
+	}
+	const listed = [].concat(...Object.values(json('com.palm.accountservices.api.json')));
+	assert.deepStrictEqual([...listed].sort(), [...served].sort());
+	assert.strictEqual(new Set(listed).size, listed.length, 'a method is in two groups');
+});

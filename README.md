@@ -47,6 +47,11 @@ com.palm.accountservices/getTermsAndConditions {}                       -> { ter
 com.palm.accountservices/getAggregatedAccountInfo { locale }            -> the OutAccountInfoAggregate the profile view renders
 com.palm.accountservices/syncDeviceName        {}                       -> POST assignDeviceName (best-effort), returns the name
 com.palm.accountservices/updateUsername        { username }             -> POST updateUsername; once the server takes it, the local cache + account
+com.palm.accountservices/updateAccountInfo     { firstName, lastName? } -> POST updateAccountInfo: the display name (profile editor's NAME row)
+com.palm.accountservices/changeEmail           { email }                -> POST changeEmailAddress; once the server takes it, the kept alias
+                                                                           (errorCode PAMS1005 not an address, PAMS1008 in use, PAMS1123 the same one)
+com.palm.accountservices/changePassword        { newPassword }          -> POST changePassword (WEAK_PASSWORD below 8 bytes); this device stays signed in
+                                                                           All three authenticate with the kept token only, never one the caller passes.
 com.palm.accountservices/signOut               {}                       -> POST deauthenticate (revokes the token on the server), clear the local token
 ```
 

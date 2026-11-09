@@ -187,3 +187,76 @@ test('signed up on the server but the profile cannot be named: still signed in, 
 	assert.deepStrictEqual(r, {returnValue: true, accountAlias: 'new@example.org', username: 'Ada Lovelace', profileNamed: false});
 	assert.strictEqual((await rig.handlers.getAccountToken()).token, 'TK-NEW', 'the token was not kept');
 });
+
+/* ---- the profile editor: name, e-mail, password (device.php) ---- */
+
+test('updateAccountInfo sends the name with the kept token, not what the app passes', async () => {
+	let seen = null;
+	const rig = makeRig({token: {alias: 'me@x', token: 'TK'}, routes: {updateAccountInfo: (body) => {
+		seen = body;
+		return {OutUpdateAccountInfo: {returnValue: true}};
+	}}});
+	const r = await rig.handlers.updateAccountInfo({firstName: ' Ada ', lastName: 'Lovelace', email: 'me@x',
+		languageCode: 'en', countryCode: 'US', authToken: 'NOT-MINE'});
+	assert.deepStrictEqual(r, {returnValue: true});
+	assert.deepStrictEqual(seen, {InUpdateAccountInfo: {authToken: 'TK', account: {firstName: 'Ada', lastName: 'Lovelace'}}});
+});
+
+test('updateAccountInfo without a first name does not reach the server', async () => {
+	const rig = makeRig({token: {alias: 'me@x', token: 'TK'}, routes: {}});
+	await assert.rejects(rig.handlers.updateAccountInfo({firstName: '  ', lastName: 'x'}), e => e.errorCode === 'MISSING_ARGS');
+	assert.strictEqual(rig.transport.seen.length, 0);
+});
+
+test('changeEmail goes to changeEmailAddress, and the kept alias follows it', async () => {
+	let seen = null;
+	const rig = makeRig({token: {alias: 'old@x', username: 'h', token: 'TK'}, routes: {changeEmailAddress: (body) => {
+		seen = body;
+		return {OutChangeEmailAddress: {returnValue: true}};
+	}}});
+	const r = await rig.handlers.changeEmail({email: ' new@x '});
+	assert.deepStrictEqual(r, {returnValue: true, email: 'new@x'});
+	assert.deepStrictEqual(seen, {InChangeEmailAddress: {authToken: 'TK', newEmailAddress: 'new@x'}});
+	const t = await rig.store.get();
+	assert.strictEqual(t.alias, 'new@x');
+	assert.strictEqual(t.token, 'TK', 'still signed in');
+	assert.strictEqual((await rig.handlers.getAccountToken()).accountAlias, 'new@x');
+});
+
+test('changeEmail: the server\'s refusal is its code, and the alias stays', async () => {
+	for (const code of ['PAMS1005', 'PAMS1008', 'PAMS1123']) {
+		const rig = makeRig({token: {alias: 'old@x', token: 'TK'}, routes: {changeEmailAddress: fail(code)}});
+		await assert.rejects(rig.handlers.changeEmail({email: 'new@x'}), e => e.errorCode === code);
+		assert.strictEqual((await rig.store.get()).alias, 'old@x');
+	}
+});
+
+test('changePassword sends the new password with the kept token, and stays signed in', async () => {
+	let seen = null;
+	const rig = makeRig({token: {alias: 'me@x', token: 'TK'}, routes: {changePassword: (body) => {
+		seen = body;
+		return {OutChangePassword: {returnValue: true}};
+	}}});
+	const r = await rig.handlers.changePassword({isResetPassword: true, newPassword: 'correct horse', idToken: 'NOT-MINE'});
+	assert.deepStrictEqual(r, {returnValue: true});
+	assert.deepStrictEqual(seen, {InChangePassword: {authToken: 'TK', newPassword: 'correct horse'}});
+	assert.strictEqual((await rig.store.get()).token, 'TK');
+});
+
+test('changePassword: shorter than the server takes is WEAK_PASSWORD here, counted in UTF-8 bytes', async () => {
+	const rig = makeRig({token: {alias: 'me@x', token: 'TK'}, routes: {changePassword: () => ({OutChangePassword: {returnValue: true}})}});
+	await assert.rejects(rig.handlers.changePassword({newPassword: 'short'}),
+		e => e.errorCode === 'WEAK_PASSWORD' && !/short/.test(e.message));
+	assert.strictEqual(rig.transport.seen.length, 0);
+	// Four characters, eight bytes: the server's strlen takes it.
+	await rig.handlers.changePassword({newPassword: 'éééé'});
+	assert.strictEqual(rig.transport.seen.length, 1);
+});
+
+test('the profile edits need a Community Account signed in', async () => {
+	const rig = makeRig({routes: {}});
+	await assert.rejects(rig.handlers.updateAccountInfo({firstName: 'Ada'}), e => e.errorCode === 'ACCOUNT_NOT_DEFINED_ERROR');
+	await assert.rejects(rig.handlers.changeEmail({email: 'a@b'}), e => e.errorCode === 'ACCOUNT_NOT_DEFINED_ERROR');
+	await assert.rejects(rig.handlers.changePassword({newPassword: 'long enough'}), e => e.errorCode === 'ACCOUNT_NOT_DEFINED_ERROR');
+	assert.strictEqual(rig.transport.seen.length, 0);
+});

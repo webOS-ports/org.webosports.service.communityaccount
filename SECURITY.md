@@ -36,6 +36,12 @@ Handling of secrets
 - **Sign-up password** — as the sign-in one: forwarded to `createDeviceAccount`
   and never stored. A too-short one is refused before anything is sent, and the
   refusal does not echo it.
+- **Changed password** (`changePassword`, the Accounts app's profile editor) —
+  the same: forwarded to `changePassword` with the kept token and never stored;
+  a too-short one is refused here without echoing it. The token sent is always
+  the one this service keeps, never one the caller passes (the app sends its
+  own copy as `idToken`, which is ignored), so a caller cannot make the bridge
+  act on another account's token. The server leaves this device's token valid.
 - **No secret is logged.** `server.js` logs method names, not bodies; `bus.js`
   logs the method and caller, not the payload; `palmcall.js` redacts
   `password`/`keydata`/`credentials` from any bus-failure text. The hardening

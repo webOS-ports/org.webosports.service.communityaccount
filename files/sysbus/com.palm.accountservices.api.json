@@ -10,6 +10,9 @@
 		"com.palm.accountservices/getAggregatedAccountInfo",
 		"com.palm.accountservices/syncDeviceName",
 		"com.palm.accountservices/updateUsername",
+		"com.palm.accountservices/updateAccountInfo",
+		"com.palm.accountservices/changeEmail",
+		"com.palm.accountservices/changePassword",
 		"com.palm.accountservices/signOut"
 	],
 	"deviceprofile.query": [

@@ -32,7 +32,8 @@ const DEVICEPROFILE = 'com.palm.deviceprofile';
 
 const TIMEOUTS = {
 	authenticateAccount: 45, createNovaAccount: 45, isEmailAvailable: 45, getTermsAndConditions: 45,
-	getAggregatedAccountInfo: 45, syncDeviceName: 45, signOut: 30
+	getAggregatedAccountInfo: 45, syncDeviceName: 45, updateUsername: 45, updateAccountInfo: 45,
+	changeEmail: 45, changePassword: 45, signOut: 30
 };
 
 function serveTable(bus, serviceName, methods, log) {
