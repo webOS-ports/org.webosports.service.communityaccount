@@ -135,7 +135,10 @@ test('signOut revokes locally even when the server call fails', async () => {
 });
 
 test('updateUsername updates the cache and renames the local account', async () => {
-	const rig = makeRig({token: {alias: 'me@x', username: 'old', token: 'TK'}, routes: {updateAccountInfo: () => ({returnValue: true})}});
+	const rig = makeRig({token: {alias: 'me@x', username: 'old', token: 'TK'}, routes: {updateUsername: (body) => {
+		assert.deepStrictEqual(body, {InUpdateUsername: {authToken: 'TK', username: 'fresh'}});
+		return {OutUpdateUsername: {username: 'fresh'}};
+	}}});
 	rig.accounts.state.accounts.push({_id: 'acct-0', templateId: 'com.palm.palmprofile', username: 'old'});
 	const r = await rig.handlers.accountservices.updateUsername({username: 'fresh'});
 	assert.strictEqual(r.username, 'fresh');

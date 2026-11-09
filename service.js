@@ -30,7 +30,10 @@ const {createDeviceIdentity} = require('./lib/deviceid');
 const ACCOUNTSERVICES = 'com.palm.accountservices';
 const DEVICEPROFILE = 'com.palm.deviceprofile';
 
-const TIMEOUTS = {authenticateAccount: 45, getAggregatedAccountInfo: 45, syncDeviceName: 45, signOut: 30};
+const TIMEOUTS = {
+	authenticateAccount: 45, createNovaAccount: 45, isEmailAvailable: 45, getTermsAndConditions: 45,
+	getAggregatedAccountInfo: 45, syncDeviceName: 45, signOut: 30
+};
 
 function serveTable(bus, serviceName, methods, log) {
 	const table = {};

@@ -24,6 +24,9 @@ Handling of secrets
   (`com.palm.account.palmprofiletoken:1`) so `getAccountToken` can serve it to
   other apps without a network round-trip. This mirrors the legacy palmprofile
   token store.
+- **Sign-up password** — as the sign-in one: forwarded to `createDeviceAccount`
+  and never stored. A too-short one is refused before anything is sent, and the
+  refusal does not echo it.
 - **No secret is logged.** `server.js` logs method names, not bodies; `bus.js`
   logs the method and caller, not the payload; `palmcall.js` redacts
   `password`/`keydata`/`credentials` from any bus-failure text. The hardening
@@ -57,6 +60,11 @@ Found on a device and fixed 2026-11-09
   stack goes to the device log. (The same copy in app-services' accounts
   service and contacts linker still does this.)
 - **The device is not named by its hardware** — see "Device identifier" below.
+- **Sign-out did not revoke the token on the server** — `deauthenticate`
+  reads the token at the top level and answers success for any token, and
+  the bridge sent it inside an `InDeauthenticate` envelope, so a signed-out
+  device's token stayed valid on the server for its year. Found by reading
+  device.php; `tests/server-shapes.test.js` now holds every envelope to it.
 - **No serial number or MAC address is sent** — `getDeviceParams` sends them as
   `""` whatever the platform reports. (It read `serialNumber`, which LuneOS
   happens not to set, so none had gone out.)
@@ -91,9 +99,10 @@ Residual risks (tracked)
    keymanager (encrypted at rest) and keep only a handle in db8.
 2. **No certificate pinning** — relies on the system trust store. Acceptable;
    pinning is a **v3** consideration given the endpoint may rotate certs.
-3. **`updateAccountInfo` envelope not pinned** — the server push on a username
-   change is best-effort and self-heals on the next aggregate; confirm the
-   envelope before relying on the server side (see README "Grounding").
+3. **No e-mail verification or captcha at sign-up** — the server makes an
+   account active at once and limits only by IP (240 device.php calls an hour).
+   Anyone can sign up with an address that is not theirs. Server-side; noted
+   for webOSArchive.
 
 GDPR
 ----
@@ -114,8 +123,15 @@ GDPR
 - **Pseudonymisation**: the device id the backend holds is keyed with a secret
   that never leaves the device, so it cannot be linked to the hardware by
   anyone holding the serial; wiping the device breaks the link for good.
+- **Sign-up** (`createNovaAccount`): the e-mail address, first and last name
+  and the password go to the server, which stores the address, a display name
+  ("first last") and a password hash, and keeps this device's account id,
+  model and OS version with the sign-in token. The terms First Use shows
+  (`getTermsAndConditions`, as plain text) are the server's own; the server
+  records no acceptance.
 - **Right to erasure / withdrawal**: `signOut` calls `deauthenticate`
-  (server-side revoke, best-effort) and clears the local token; a future
-  account-deletion method (`dissociateCurrentDevice`/erase) would complete it
-  and is a tracked v2/v3 sign-up-flow item.
+  (server-side revoke) and clears the local token. Erasing the account itself
+  has no device.php method; the server's terms point to
+  appcatalog.webosarchive.org/admin, where a member can delete their stored
+  data, and deleting the account is done by its administrators.
 - **No analytics or telemetry** in the bridge.

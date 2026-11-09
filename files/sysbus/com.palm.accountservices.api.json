@@ -4,6 +4,9 @@
 	],
 	"accountservices.operation": [
 		"com.palm.accountservices/authenticateAccount",
+		"com.palm.accountservices/createNovaAccount",
+		"com.palm.accountservices/isEmailAvailable",
+		"com.palm.accountservices/getTermsAndConditions",
 		"com.palm.accountservices/getAggregatedAccountInfo",
 		"com.palm.accountservices/syncDeviceName",
 		"com.palm.accountservices/updateUsername",
