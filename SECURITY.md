@@ -23,7 +23,16 @@ Handling of secrets
 - **Bearer token** — stored locally in db8
   (`com.palm.account.palmprofiletoken:1`) so `getAccountToken` can serve it to
   other apps without a network round-trip. This mirrors the legacy palmprofile
-  token store.
+  token store. The kind is owned by the bridge's own appId, so db8 lets no
+  other app read it directly (checked on a device: another caller's `find` is
+  "permission denied"). A db8 call that fails is reported with the token
+  shown as `<hidden>`. db8 itself still logs the payload of a call it refuses,
+  so a save that fails puts the token in the journal; the store's id and owner
+  are what db8 accepts, so a save should not fail.
+- **Fixed before release:** the first device builds never saved the token: db8
+  refused the kind (owned by `com.palm.accountservices`, not the caller) and
+  the id (`_palmprofiletoken`, too long). Every sign-in failed after the
+  server had issued a token, and that token was logged.
 - **Sign-up password** — as the sign-in one: forwarded to `createDeviceAccount`
   and never stored. A too-short one is refused before anything is sent, and the
   refusal does not echo it.
