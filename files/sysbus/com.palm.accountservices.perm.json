@@ -1,5 +1,5 @@
 {
-	"com.palm.accountservices": [
+	"org.webosports.service.communityaccount": [
 		"accountservices.query",
 		"accountservices.operation",
 		"deviceprofile.query",
@@ -8,10 +8,5 @@
 		"database.operation",
 		"systemsettings.query",
 		"systemsettings.management"
-	],
-	"com.palm.deviceprofile": [
-		"deviceprofile.query",
-		"systemsettings.query",
-		"database.operation"
 	]
 }
