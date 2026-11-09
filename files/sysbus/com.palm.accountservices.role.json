@@ -1,5 +1,5 @@
 {
-	"appId": "com.palm.accountservices",
+	"appId": "org.webosports.service.communityaccount",
 	"allowedNames": ["com.palm.accountservices", "com.palm.deviceprofile"],
 	"trustLevel": "oem",
 	"type": "regular",
